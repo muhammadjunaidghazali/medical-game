@@ -3,651 +3,762 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Navigating Patient Emotions: A Medical Scenario Game</title>
-    <!-- Tailwind CSS CDN for modern styling -->
+    <title>Psychological 'Escape Room' - Drag & Drop Diagnosis</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Custom CSS for finer control and overrides */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8; /* Light blue-grey background */
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); /* Darker, more somber gradient for hospital feel */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 1rem;
+            margin: 0;
+            overflow-y: auto; /* Allow vertical scrolling if content overflows */
+            color: #ecf0f1; /* Light text for contrast */
+            /* Anti-cheating: Disable text selection */
+            -webkit-user-select: none;  /* Safari */
+            -moz-user-select: none;     /* Firefox */
+            -ms-user-select: none;      /* IE 10+/Edge */
+            user-select: none;          /* Standard */
+            -webkit-touch-callout: none; /* iOS Safari */
+            -webkit-tap-highlight-color: rgba(0,0,0,0); /* Disable tap highlight on iOS */
         }
 
         .game-container {
-            background-color: #ffffff;
-            border-radius: 1.5rem; /* More rounded corners */
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Softer shadow */
-            max-width: 900px;
-            width: 100%;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            min-height: 500px; /* Minimum height for better layout */
-        }
-
-        .screen {
-            display: none; /* Hidden by default */
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 2rem;
+            background-color: rgba(44, 62, 80, 0.8); /* Dark blue-grey with transparency */
+            backdrop-filter: blur(8px); /* Frosted glass effect */
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 800px;
             text-align: center;
-            flex-grow: 1; /* Allows screens to take available height */
+            position: relative;
+            animation: fadeIn 1s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            /* Anti-cheating: Disable right-click context menu */
+            oncontextmenu="return false;"
         }
 
-        .screen.active {
-            display: flex; /* Active screen is visible */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* New glow effect for start screen */
+        #startScreen {
+            animation: glowPulse 2s infinite alternate;
+        }
+
+        @keyframes glowPulse {
+            from { box-shadow: 0 0 15px rgba(52, 152, 219, 0.7); } /* Initial glow */
+            to { box-shadow: 0 0 30px rgba(52, 152, 219, 1); } /* Brighter glow */
         }
 
         .button-primary {
-            background-color: #4f46e5; /* Indigo */
+            background: linear-gradient(45deg, #3498db 0%, #2980b9 100%); /* Softer blue gradient */
             color: white;
             padding: 0.75rem 2rem;
-            border-radius: 9999px; /* Pill-shaped button */
+            border-radius: 10px;
             font-weight: 600;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
             border: none;
             cursor: pointer;
+            font-size: 1.125rem;
         }
 
         .button-primary:hover {
-            background-color: #4338ca; /* Darker indigo */
-            transform: translateY(-2px); /* Slight lift effect */
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.6);
         }
 
-        .option-button {
-            background-color: #e0e7ff; /* Light indigo */
-            color: #312e81; /* Dark indigo text */
-            padding: 1rem 1.5rem;
-            border-radius: 0.75rem; /* Rounded corners */
-            margin-bottom: 0.75rem;
+        .button-secondary {
+            background-color: #9b59b6; /* Amethyst purple */
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4);
+            border: none;
             cursor: pointer;
-            text-align: left;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            border: 2px solid transparent; /* For highlighting */
+            font-size: 1.125rem;
+        }
+
+        .button-secondary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(155, 89, 182, 0.6);
+        }
+
+        .option-draggable {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ecf0f1;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
             font-weight: 500;
-        }
-
-        .option-button:hover:not(.selected) {
-            background-color: #c7d2fe; /* Lighter indigo on hover */
-            transform: translateY(-2px);
-        }
-
-        .option-button.correct {
-            background-color: #d1fae5; /* Green for correct */
-            border-color: #10b981; /* Green border */
-            color: #065f46; /* Dark green text */
-        }
-
-        .option-button.partially-correct {
-            background-color: #fefcbf; /* Yellow for partially correct */
-            border-color: #facc15; /* Yellow border */
-            color: #854d09; /* Dark yellow text */
-        }
-
-        .option-button.incorrect {
-            background-color: #fee2e2; /* Red for incorrect */
-            border-color: #ef4444; /* Red border */
-            color: #991b1b; /* Dark red text */
-        }
-
-        /* Disable pointer events when an option is selected */
-        .options-container.answered .option-button:not(.selected) {
-            pointer-events: none;
-            opacity: 0.6;
-        }
-
-        .feedback-box {
-            background-color: #f8fafc;
-            border-radius: 0.75rem;
-            padding: 1.25rem;
-            margin-top: 1.5rem;
-            border: 1px solid #e2e8f0;
             text-align: left;
-        }
-
-        .feedback-box h3 {
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
-        .progress-bar {
-            background-color: #e2e8f0;
-            border-radius: 0.5rem;
-            height: 8px;
-            width: 100%;
-            overflow: hidden;
-            margin-top: 1rem;
-        }
-
-        .progress-fill {
-            background-color: #4f46e5;
-            height: 100%;
-            width: 0%;
-            border-radius: 0.5rem;
-            transition: width 0.5s ease-in-out;
-        }
-
-        /* Input field styling */
-        .name-input {
-            padding: 0.75rem 1.25rem;
-            border: 1px solid #cbd5e1; /* Slate-300 */
-            border-radius: 0.75rem;
-            width: 80%;
-            max-width: 300px;
-            margin-bottom: 1.5rem;
+            transition: all 0.2s ease;
+            cursor: grab; /* Indicate draggable */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
             font-size: 1rem;
-            color: #334155; /* Slate-700 */
-        }
-        .name-input::placeholder {
-            color: #94a3b8; /* Slate-400 */
-        }
-        .name-input:focus {
-            outline: none;
-            border-color: #6366f1; /* Indigo-500 */
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
         }
 
-        .error-message {
-            color: #ef4444; /* Red-500 */
-            font-size: 0.875rem;
-            margin-top: -1rem;
-            margin-bottom: 1rem;
+        .option-draggable:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            transform: scale(1.02);
         }
 
-        /* Scoreboard styling */
-        .scoreboard {
-            width: 100%;
-            max-width: 400px;
-            margin-top: 2rem;
-            background-color: #f8fafc;
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            border: 1px solid #e2e8f0;
+        .option-draggable.dragging {
+            opacity: 0.5;
+            border: 2px dashed #f1c40f;
         }
-        .scoreboard-title {
-            font-size: 1.5rem;
+
+        .drop-zone {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 2px dashed #3498db;
+            border-radius: 15px;
+            padding: 2rem;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column; /* Allow content to stack */
+            justify-content: center;
+            align-items: center;
+            font-size: 1.25rem;
+            color: #bdc3c7;
+            margin-top: 1.5rem;
+            transition: all 0.2s ease;
+            position: relative; /* For absolutely positioning placeholder */
+            overflow: hidden; /* Hide overflow if dragged item is larger */
+        }
+
+        .drop-zone.drag-over {
+            background-color: rgba(52, 152, 219, 0.2);
+            border-color: #f1c40f;
+            transform: scale(1.02);
+        }
+
+        .drop-zone-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #bdc3c7;
+            pointer-events: none; /* Allow clicks/drops through placeholder */
+            transition: opacity 0.3s ease;
+            opacity: 1;
+        }
+
+        .drop-zone.has-item .drop-zone-placeholder {
+            opacity: 0; /* Hide placeholder when item is dropped */
+        }
+
+        .option-draggable.correct {
+            background-color: #27ae60; /* Emerald green */
+            border-color: #27ae60;
+            animation: pulseCorrect 0.5s ease-in-out;
+            cursor: default; /* Not draggable anymore */
+        }
+
+        .option-draggable.incorrect {
+            background-color: #e74c3c; /* Alizarin red */
+            border-color: #e74c3c;
+            animation: shake 0.3s ease-in-out;
+            cursor: default; /* Not draggable anymore */
+        }
+
+        @keyframes pulseCorrect {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
+        .timer-display {
+            font-size: 2.5rem;
             font-weight: 700;
-            color: #334155;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            color: #f1c40f; /* Sunflower yellow */
+            text-shadow: 0 0 10px rgba(241, 196, 15, 0.6);
         }
+
+        .timer-blinking {
+            animation: blink 0.7s infinite alternate;
+        }
+
+        @keyframes blink {
+            from { opacity: 1; }
+            to { opacity: 0.3; }
+        }
+
         .scoreboard-item {
             display: flex;
             justify-content: space-between;
             padding: 0.5rem 0;
-            border-bottom: 1px dashed #e2e8f0;
-            font-size: 1.125rem;
-            color: #475569;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.3);
         }
         .scoreboard-item:last-child {
             border-bottom: none;
         }
-        .scoreboard-item .name {
-            font-weight: 600;
-        }
-        .scoreboard-item .score {
-            color: #4f46e5;
-            font-weight: 700;
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
         }
 
+        .modal-content {
+            background-color: #2c3e50; /* Dark blue-grey */
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
+            width: 90%;
+            color: white;
+        }
 
-        /* Responsive adjustments */
-        @media (min-width: 640px) {
-            .game-container {
-                padding: 2rem;
-            }
+        .door-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #bdc3c7; /* Silver */
+            transition: color 0.5s ease-in-out;
+        }
+
+        .door-icon.unlocked {
+            color: #2ecc71; /* Green for unlocked */
+            animation: bounceIn 0.5s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
-<body class="selection:bg-indigo-300 selection:text-indigo-900">
-    <div class="game-container flex flex-col items-center justify-between p-4 sm:p-8">
-
-        <!-- Welcome Screen -->
-        <div id="welcome-screen" class="screen active">
-            <h1 class="text-4xl sm:text-5xl font-bold text-gray-800 mb-6 leading-tight">Navigating Patient Emotions: A Medical Scenario Game</h1>
-            <div class="mb-8 w-32 h-32 flex items-center justify-center bg-indigo-100 rounded-full shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#4f46e5" class="w-20 h-20">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.25 2.25 0 0019.5 18.75V10.5m-11.69 5.69L7.75 21A2.25 2.25 0 015.25 18.75V10.5m10.38-4.5a1.125 1.125 0 011.125 1.125v1.5c0 .621.504 1.125 1.125 1.125H21h-6.182a1.125 1.125 0 00-1.125 1.125m-11.69-5.69A1.125 1.125 0 016.75 7.5v1.5c0 .621-.504 1.125-1.125 1.125H3h6.182a1.125 1.125 0 011.125 1.125m9.75-9.75a1.5 1.5 0 000 3m-9.75-3a1.5 1.5 0 000 3M9 15.375v-3.375c0-.621.504-1.125 1.125-1.125h.875c.621 0 1.125.504 1.125 1.125v3.375m7.5-3.375c0-.621.504-1.125 1.125-1.125h.875c.621 0 1.125.504 1.125 1.125v3.375m-9.75 3.375v-3.375c0-.621.504-1.125 1.125-1.125h.875c.621 0 1.125.504 1.125 1.125v3.375" />
-                </svg>
-            </div>
-            <p class="text-lg text-gray-600 mb-6 max-w-xl">
-                As healthcare professionals, understanding and responding to patients' psychological reactions is crucial. This game will present you with medical scenarios and challenge you to choose the most empathetic and effective responses.
-            </p>
-            <input type="text" id="player-name-input" class="name-input" placeholder="Enter your name">
-            <p id="name-error" class="error-message hidden">Please enter your name to start the game.</p>
-            <button id="start-game-btn" class="button-primary">Start Game</button>
+<body>
+    <div id="gameContainer" class="game-container" oncontextmenu="return false;">
+        <div id="startScreen" class="flex flex-col items-center justify-center gap-8">
+            <h1 class="text-5xl font-bold mb-4 text-white drop-shadow-lg">Psychological 'Escape Room'</h1>
+            <p class="text-xl mb-8 text-gray-200">Escape the locked hospital ward by solving psychological puzzles!</p>
+            <button id="startButton" class="button-primary w-full max-w-xs">Start Escape</button>
+            <button id="showScoreboardButton" class="button-secondary w-full max-w-xs">View Scoreboard</button>
         </div>
 
-        <!-- Game Screen -->
-        <div id="game-screen" class="screen">
-            <div class="w-full flex justify-between items-center mb-4">
-                <span id="score-display" class="text-xl font-semibold text-gray-700">Score: 0</span>
-                <span id="scenario-progress" class="text-lg text-gray-500">Scenario 1 of 5</span>
+        <div id="gameScreen" class="hidden flex flex-col items-center justify-center gap-6">
+            <div class="flex justify-between w-full mb-4">
+                <span class="text-xl font-semibold text-gray-200">Ward: <span id="levelDisplay">1</span>/10</span>
+                <span class="text-xl font-semibold text-gray-200">Score: <span id="scoreDisplay">0</span></span>
             </div>
-            <div class="progress-bar mb-6">
-                <div id="progress-fill" class="progress-fill"></div>
-            </div>
-
-            <div class="scenario-card bg-white p-6 rounded-xl shadow-md border border-gray-200 w-full mb-6">
-                <img id="scenario-image" class="w-24 h-24 mx-auto mb-4 rounded-lg object-cover bg-gray-100 flex items-center justify-center text-gray-400" src="https://placehold.co/96x96/e0e7ff/4f46e5?text=Scenario" alt="Scenario Placeholder">
-                <p id="scenario-text" class="text-lg text-gray-800 leading-relaxed mb-6"></p>
-            </div>
-
-            <div id="options-container" class="options-container w-full grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Options will be dynamically loaded here -->
-            </div>
-
-            <div id="feedback-container" class="feedback-box hidden mt-6 w-full max-w-lg">
-                <h3 id="feedback-heading" class="text-xl font-semibold text-gray-800 mb-2"></h3>
-                <p id="feedback-text" class="text-gray-700"></p>
-            </div>
-
-            <button id="next-scenario-btn" class="button-primary mt-8 hidden">Next Scenario</button>
-        </div>
-
-        <!-- Results Screen -->
-        <div id="results-screen" class="screen">
-            <h2 class="text-4xl font-bold text-gray-800 mb-6">Game Over!</h2>
-            <p class="text-2xl text-gray-700 mb-4">Your final score: <span id="final-score" class="font-bold text-indigo-600">0</span></p>
-            <div class="scoreboard">
-                <h3 class="scoreboard-title">Top Scores</h3>
-                <div id="scoreboard-list">
-                    <!-- Scoreboard items will be loaded here -->
+            <div id="doorIcon" class="door-icon">🚪</div> <div id="timerDisplay" class="timer-display">39</div>
+            <p id="scenarioText" class="text-lg mb-4 text-gray-100 leading-relaxed"></p>
+            <h2 id="questionText" class="text-2xl font-semibold mb-6 text-white leading-snug"></h2>
+            <div id="optionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                 </div>
+            <div id="dropZone" class="drop-zone w-full max-w-md">
+                <span class="drop-zone-placeholder text-xl font-semibold">Drag your answer here to unlock the door!</span>
             </div>
-            <p id="performance-summary" class="text-lg text-gray-600 mb-8 max-w-xl"></p>
-            <button id="play-again-btn" class="button-primary">Play Again</button>
         </div>
 
+        <div id="endScreen" class="hidden flex flex-col items-center justify-center gap-8">
+            <h2 class="text-4xl font-bold mb-4 text-white">Escape Complete!</h2>
+            <p class="text-2xl text-gray-200">Your Final Score: <span id="finalScoreDisplay" class="font-bold text-yellow-300">0</span></p>
+            <button id="restartButton" class="button-primary w-full max-w-xs">Play Again</button>
+            <button id="backToMenuButton" class="button-secondary w-full max-w-xs">Back to Main Menu</button>
+        </div>
+
+        <div id="scoreboardScreen" class="hidden flex flex-col items-center justify-center gap-6">
+            <h2 class="text-4xl font-bold mb-6 text-white">High Scores</h2>
+            <div id="scoreboardList" class="w-full max-w-md bg-white bg-opacity-10 rounded-lg p-6 shadow-lg">
+                <div class="scoreboard-item font-bold text-lg mb-2">
+                    <span>Player</span>
+                    <span>Score</span>
+                </div>
+                </div>
+            <button id="hideScoreboardButton" class="button-primary w-full max-w-xs mt-6">Back to Menu</button>
+        </div>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="customAlertModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="alertTitle" class="text-2xl font-bold mb-4"></h3>
+            <p id="alertMessage" class="text-lg mb-6"></p>
+            <button id="alertCloseButton" class="button-primary">OK</button>
+        </div>
+    </div>
+
+    <!-- Name Input Modal -->
+    <div id="nameInputModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-4">Enter Your Name</h3>
+            <p class="text-lg mb-6">Congratulations! Enter your name to save your score.</p>
+            <input type="text" id="playerNameInput" placeholder="Your Name" class="w-full p-3 mb-6 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500">
+            <button id="saveNameButton" class="button-primary w-full max-w-xs">Save Score</button>
+        </div>
     </div>
 
     <script>
-        // Game state variables
-        let currentScenarioIndex = 0;
-        let score = 0;
-        let isAnswered = false; // To prevent multiple clicks on options
-        let playerName = ''; // Variable to store player's name
-        const scoreboard = []; // Array to store scores for the current session
+        // Use a custom alert function instead of window.alert
+        function customAlert(title, message) {
+            document.getElementById('alertTitle').innerText = title;
+            document.getElementById('alertMessage').innerText = message;
+            document.getElementById('customAlertModal').classList.remove('hidden');
+        }
 
-        // DOM element references
-        const welcomeScreen = document.getElementById('welcome-screen');
-        const gameScreen = document.getElementById('game-screen');
-        const resultsScreen = document.getElementById('results-screen');
-        const startGameBtn = document.getElementById('start-game-btn');
-        const nextScenarioBtn = document.getElementById('next-scenario-btn');
-        const playAgainBtn = document.getElementById('play-again-btn');
-        const scoreDisplay = document.getElementById('score-display');
-        const scenarioProgress = document.getElementById('scenario-progress');
-        const progressBarFill = document.getElementById('progress-fill');
-        const scenarioImage = document.getElementById('scenario-image');
-        const scenarioText = document.getElementById('scenario-text');
-        const optionsContainer = document.getElementById('options-container');
-        const feedbackContainer = document.getElementById('feedback-container');
-        const feedbackHeading = document.getElementById('feedback-heading');
-        const feedbackText = document.getElementById('feedback-text');
-        const finalScoreDisplay = document.getElementById('final-score');
-        const performanceSummary = document.getElementById('performance-summary');
-        const playerNameInput = document.getElementById('player-name-input'); // New: Player name input
-        const nameError = document.getElementById('name-error'); // New: Name error message
-        const scoreboardList = document.getElementById('scoreboard-list'); // New: Scoreboard list container
+        document.getElementById('alertCloseButton').addEventListener('click', () => {
+            document.getElementById('customAlertModal').classList.add('hidden');
+        });
 
-        // Define game scenarios
-        // Each scenario includes text, an image placeholder, the core psychological reaction,
-        // a list of response options, the index of the best option, and detailed feedback.
-        const scenarios = [
+        const questions = [
             {
-                scenarioText: "Mrs. Fatima, a 70-year-old patient, clutches her chest tightly, her breathing is shallow and rapid. When you ask how she's feeling, she whispers, 'I... I can't breathe... I'm so scared. What's happening to me?'",
-                imagePlaceholder: "https://placehold.co/96x96/e0e7ff/4f46e5?text=Anxiety",
-                reaction: "Anxiety/Fear",
+                level: 1,
+                scenario: "You are in Ward 1. A patient avoids eye contact and only answers in monosyllables when asked about their pain during a ward round.",
+                question: "What might this behavior primarily indicate in the Pakistani cultural context, and how does it help unlock the door?",
                 options: [
-                    "\"Don't worry, you'll be fine. Just breathe normally.\"",
-                    "\"I understand you're scared, Mrs. Fatima. Let's try some slow, deep breaths together. I'm here with you.\"",
-                    "\"We need to run some tests. Please calm down.\"",
-                    "\"Are you always this dramatic when you come to the hospital?\""
-                ],
-                correctOptionIndex: 1, // Index of the most appropriate response
-                feedback: {
-                    correct: {
-                        heading: "Correct! Excellent Empathy.",
-                        text: "Mrs. Fatima is experiencing acute anxiety and fear. Your response validates her feelings, offers a calming technique, and reassures her with your presence. This builds trust and helps her regain control."
-                    },
-                    partiallyCorrect: {
-                        heading: "Partially Correct.",
-                        text: "While trying to reassure, simply saying 'Don't worry' can dismiss her feelings. The patient is exhibiting high levels of anxiety and fear. It's better to acknowledge her fear and provide concrete coping strategies."
-                    },
-                    incorrect: {
-                        heading: "Incorrect.",
-                        text: "Telling a patient to 'calm down' or questioning their behavior in this manner invalidates their experience and can escalate their distress. The patient is exhibiting high levels of anxiety and fear. Always approach with empathy and focus on active listening and support."
-                    }
-                }
+                    { text: "Extreme shyness or deference towards authority figures. (Cultural Sensitivity)", isCorrect: true, type: "Cultural Concept" },
+                    { text: "Lack of understanding of the questions being asked. (Communication Barrier)", isCorrect: false, type: "Misinterpretation" },
+                    { text: "Disinterest in receiving medical treatment. (Patient Apathy)", isCorrect: false, type: "Behavioral Sign" },
+                    { text: "A sign of severe, debilitating pain. (Pain Expression)", isCorrect: false, type: "Symptom Interpretation" }
+                ]
             },
             {
-                scenarioText: "Mr. Sohail, a 55-year-old recently diagnosed with Type 2 Diabetes, waves his hand dismissively. 'Diabetes? No, no, that's not me. I feel fine. My blood sugar was probably just off that day.'",
-                imagePlaceholder: "https://placehold.co/96x96/ffe4e6/ef4444?text=Denial",
-                reaction: "Denial",
+                level: 2,
+                scenario: "You are in Ward 2. An elderly woman insists on consulting a 'pir sahib' (spiritual healer) alongside her prescribed medication for chronic illness, believing in spiritual remedies.",
+                question: "What psychological concept is most at play here regarding her health beliefs, and what key does it provide?",
                 options: [
-                    "\"Mr. Sohail, you must accept your diagnosis. It's serious.\"",
-                    "\"I understand this is a lot to take in, Mr. Sohail. Many people feel overwhelmed initially. Let's talk about what this diagnosis means when you're ready.\"",
-                    "\"If you don't take this seriously, you'll have severe complications.\""
-                ],
-                correctOptionIndex: 1,
-                feedback: {
-                    correct: {
-                        heading: "Correct! Empathetic and Patient.",
-                        text: "Mr. Sohail is in denial, a common reaction to difficult diagnoses. Your response acknowledges his potential overwhelm, shows empathy, and offers support without forcing acceptance immediately. This opens a path for future education and acceptance."
-                    },
-                    partiallyCorrect: {
-                        heading: "Partially Correct.",
-                        text: "While acceptance is important, a direct demand can make the patient more resistant. The patient is exhibiting denial. Focus on validating their feelings and offering support and information when they are ready to receive it."
-                    },
-                    incorrect: {
-                        heading: "Incorrect.",
-                        text: "Using threats or guilt trips is counterproductive and can damage the therapeutic relationship. The patient is exhibiting denial. Instead, provide understanding and a safe space for them to process the information at their own pace."
-                    }
-                }
+                    { text: "Delusional thinking, indicating a severe mental disorder. (Misinterpretation)", isCorrect: false, type: "Misdiagnosis" },
+                    { text: "Health locus of control (external), attributing health outcomes to external forces. (Belief Systems)", isCorrect: true, type: "Psychological Term" },
+                    { text: "Non-compliance with medical advice due to distrust. (Distrust)", isCorrect: false, type: "Patient Behavior" },
+                    { text: "Somatization, manifesting psychological distress as physical symptoms. (Physical Manifestation)", isCorrect: false, type: "Psychological Disorder" }
+                ]
             },
             {
-                scenarioText: "After waiting for over an hour, Ms. Ayesha, a young adult, storms up to the reception desk, her voice rising. 'This is ridiculous! I've been here forever! Do you even care that I have other things to do?!'",
-                imagePlaceholder: "https://placehold.co/96x96/fffbeb/facc15?text=Anger",
-                reaction: "Anger/Frustration",
+                level: 3,
+                scenario: "You are in Ward 3. A young man repeatedly visits the emergency room complaining of various physical symptoms (headaches, body aches, fatigue) for which no organic cause is found, despite extensive medical tests.",
+                question: "This pattern of behavior, where psychological distress is expressed through physical symptoms, is most indicative of which psychological reaction, unlocking the next passage?",
                 options: [
-                    "\"Please lower your voice, Ms. Ayesha, you're disturbing other patients.\"",
-                    "\"I apologize for the wait, Ms. Ayesha. I can see how frustrating this must be. Let me check with the doctor's office for an updated estimate on your wait time.\"",
-                    "\"Everyone has to wait. You're not special.\""
-                ],
-                correctOptionIndex: 1,
-                feedback: {
-                    correct: {
-                        heading: "Correct! De-escalation through Empathy.",
-                        text: "Ms. Ayesha is expressing anger and frustration due to the wait. Your response validates her feelings ('I can see how frustrating this must be'), apologizes for the inconvenience, and offers a concrete action to resolve the issue. This often de-escalates the situation."
-                    },
-                    partiallyCorrect: {
-                        heading: "Partially Correct.",
-                        text: "While asking a patient to lower their voice might be necessary for the environment, it doesn't address the underlying frustration. The patient is exhibiting anger and frustration. Focus on acknowledging their feelings before setting boundaries."
-                    },
-                    incorrect: {
-                        heading: "Incorrect.",
-                        text: "Dismissing a patient's feelings or being sarcastic will only escalate their anger and damage trust. The patient is exhibiting anger and frustration. Always respond with empathy and a commitment to address their concerns respectfully."
-                    }
-                }
+                    { text: "Hypochondriasis, an obsessive fear of having a serious illness. (Fear of Illness)", isCorrect: false, type: "Disorder" },
+                    { text: "Malingering, intentionally faking symptoms for external gain. (Deception)", isCorrect: false, type: "Behavioral Disorder" },
+                    { text: "Somatization, the manifestation of psychological distress as physical symptoms. (Mind-Body Connection)", isCorrect: true, type: "Psychological Reaction" },
+                    { text: "Conversion disorder, neurological symptoms without a neurological basis. (Neurological Mimicry)", isCorrect: false, type: "Disorder" }
+                ]
             },
             {
-                scenarioText: "Mr. Rizwan, a middle-aged man, just received difficult news about his prognosis. He sits slumped in his chair, avoiding eye contact, and his eyes appear watery. He says softly, 'I don't know what to do... this is too much.'",
-                imagePlaceholder: "https://placehold.co/96x96/e6f6ff/60a5fa?text=Sadness",
-                reaction: "Sadness/Grief/Overwhelm",
+                level: 4,
+                scenario: "You are in Ward 4. A doctor explains a complex diagnosis to a patient's family, but they seem to only hear and remember information that aligns with their pre-existing beliefs or hopes about the illness.",
+                question: "This selective interpretation of information is an example of what cognitive bias, revealing the next code?",
                 options: [
-                    "\"Let me give you some pamphlets to read about your condition.\"",
-                    "\"I'm sorry you're going through this. Take your time. Is there anything at all I can do for you right now, or would you prefer some quiet space?\"",
-                    "\"You need to stay strong for your family, Mr. Rizwan.\""
-                ],
-                correctOptionIndex: 1,
-                feedback: {
-                    correct: {
-                        heading: "Correct! Compassionate Support.",
-                        text: "Mr. Rizwan is experiencing sadness and overwhelm. Your response offers genuine empathy, respects his need for time, and allows him to direct what kind of support he needs (or doesn't need) at that moment. This is crucial for grief processing."
-                    },
-                    partiallyCorrect: {
-                        heading: "Partially Correct.",
-                        text: "While information is important, Mr. Rizwan is clearly overwhelmed and emotionally distressed. The patient is exhibiting sadness and overwhelm. This is not the right time for new information; prioritize emotional support first."
-                    },
-                    incorrect: {
-                        heading: "Incorrect.",
-                        text: "Telling someone to 'stay strong' can invalidate their feelings and add pressure during a vulnerable time. The patient is exhibiting sadness and overwhelm. Focus on acknowledging their pain and offering unconditional support."
-                    }
-                }
+                    { text: "Confirmation bias, favoring information that confirms existing beliefs. (Cognitive Filter)", isCorrect: true, type: "Cognitive Bias" },
+                    { text: "Hindsight bias, the tendency to see past events as predictable. (Past Illusion)", isCorrect: false, type: "Cognitive Bias" },
+                    { text: "Anchoring bias, over-reliance on the first piece of information. (First Impression)", isCorrect: false, type: "Cognitive Bias" },
+                    { text: "Availability heuristic, judging likelihood based on easily recalled examples. (Memory Shortcut)", isCorrect: false, type: "Cognitive Bias" }
+                ]
             },
             {
-                scenarioText: "A young adult patient, Ms. Sara, is given complex instructions for managing their new chronic condition, including medication schedules, dietary restrictions, and follow-up appointments. They stare blankly, then say, 'So... what was that about the blue pill... and was it no sugar or just less sugar?'",
-                imagePlaceholder: "https://placehold.co/96x96/f1f5f9/64748b?text=Overload",
-                reaction: "Information Overload",
+                level: 5,
+                scenario: "You are in Ward 5. A patient, after receiving a difficult diagnosis (e.g., a chronic, life-altering condition), starts joking excessively and making light of their serious condition, avoiding any serious discussion about it.",
+                question: "Which defense mechanism is the patient most likely employing to cope with the emotional impact, and what does it signify for your escape?",
                 options: [
-                    "\"I just explained it. Weren't you listening?\"",
-                    "\"It sounds like a lot of information, and it is! Let's break it down. What's the most important thing you remember, and what questions do you have about the rest?\"",
-                    "\"The instructions are all in the pamphlet. Read it carefully.\"",
-                    "\"It's simple. Take the blue pill twice a day, no sugar at all.\""
-                ],
-                correctOptionIndex: 1,
-                feedback: {
-                    correct: {
-                        heading: "Correct! Clear and Collaborative.",
-                        text: "Ms. Sara is experiencing information overload. Your response acknowledges the volume of information, offers to break it down, and encourages them to identify what they've retained and where their specific questions lie. This is a patient-centered approach to education."
-                    },
-                    partiallyCorrect: {
-                        heading: "Partially Correct.",
-                        text: "While providing simple instructions might seem helpful, it doesn't address the underlying issue of information overload or check for understanding. The patient is exhibiting signs of information overload. Acknowledge this and break down information into manageable chunks."
-                    },
-                    incorrect: {
-                        heading: "Incorrect.",
-                        text: "Accusing the patient of not listening is disrespectful and unhelpful. Simply referring to a pamphlet without further interaction is also dismissive. The patient is exhibiting information overload. Always re-explain and check for understanding patiently."
-                    }
-                }
+                    { text: "Denial, refusing to acknowledge the reality of the diagnosis. (Reality Avoidance)", isCorrect: false, type: "Defense Mechanism" },
+                    { text: "Rationalization, creating logical reasons for unacceptable thoughts/behaviors. (False Logic)", isCorrect: false, type: "Defense Mechanism" },
+                    { text: "Humor, using comedy to express difficult feelings and cope with stress. (Emotional Release)", isCorrect: true, type: "Defense Mechanism" },
+                    { text: "Regression, reverting to an earlier developmental stage. (Childlike Behavior)", isCorrect: false, type: "Defense Mechanism" }
+                ]
+            },
+            {
+                level: 6,
+                scenario: "You are in Ward 6. A family insists on keeping a critically ill patient on life support against clear medical advice, citing strong religious reasons and hope for a miracle, despite a grim prognosis.",
+                question: "This situation highlights a common conflict between medical ethics and which significant psychological/cultural factor in Pakistani society, leading to the next floor?",
+                options: [
+                    { text: "Patient autonomy, as the patient's wishes are being overridden. (Individual Rights)", isCorrect: false, type: "Ethical Principle" },
+                    { text: "Cultural fatalism and strong religious beliefs influencing end-of-life decisions. (Cultural Values)", isCorrect: true, type: "Cultural Factor" },
+                    { text: "Physician burnout, leading to a lack of empathy. (Doctor's State)", isCorrect: false, type: "Workplace Issue" },
+                    { text: "Economic burden, as they might not afford alternative care. (Financial Strain)", isCorrect: false, type: "Socioeconomic Factor" }
+                ]
+            },
+            {
+                level: 7,
+                scenario: "You are in Ward 7. A patient with chronic back pain consistently exaggerates their symptoms during consultations, describing them in dramatic terms, but appears relatively comfortable and active outside the clinic, often seeking sympathy from others.",
+                question: "What psychological concept might best explain the *exaggeration* of symptoms for external gain (e.g., attention, sympathy, specific medication, or avoiding responsibilities), revealing the hidden exit?",
+                options: [
+                    { text: "Factitious disorder, where symptoms are feigned to assume the sick role (primary gain). (Sick Role Seeking)", isCorrect: false, type: "Disorder" },
+                    { text: "Malingering, the intentional production of false or grossly exaggerated physical or psychological symptoms, motivated by external incentives. (Secondary Gain)", isCorrect: true, type: "Psychological Concept" },
+                    { text: "Illness anxiety disorder, preoccupation with having or acquiring a serious illness. (Health Worry)", isCorrect: false, type: "Disorder" },
+                    { text: "Somatic symptom disorder, physical symptoms causing significant distress or functional impairment. (Real Symptoms)", isCorrect: false, type: "Disorder" }
+                ]
+            },
+            {
+                level: 8,
+                scenario: "You are in Ward 8. A doctor observes that a patient's family members frequently interrupt, speak for the patient, and make decisions on their behalf, even when the patient is capable of communicating their own wishes.",
+                question: "What cultural dynamic is most likely influencing this interaction in a collectivist society like Pakistan, and how does it help you find the next key?",
+                options: [
+                    { text: "Lack of patient education, making them unable to communicate effectively. (Education Gap)", isCorrect: false, type: "Communication Issue" },
+                    { text: "Family-centered decision-making and strong familial bonds, where the family unit acts collectively. (Collectivism)", isCorrect: true, type: "Cultural Dynamic" },
+                    { text: "Physician dominance, where doctors discourage individual patient input. (Doctor's Power)", isCorrect: false, type: "Medical System Factor" },
+                    { text: "Patient apathy, indicating a lack of interest in their own treatment. (Patient Indifference)", isCorrect: false, type: "Patient Behavior" }
+                ]
+            },
+            {
+                level: 9,
+                scenario: "You are in Ward 9. A patient, initially compliant with their diabetes management plan, suddenly becomes irritable, refuses medication, and expresses distrust in the medical system after a minor setback in their recovery (e.g., a slight increase in blood sugar despite adherence).",
+                question: "This sudden shift in behavior, characterized by anger and resistance following a frustrating outcome, could be attributed to which psychological phenomenon related to coping with illness, opening the final door?",
+                options: [
+                    { text: "Learned helplessness, a feeling of powerlessness after repeated failures. (Giving Up)", isCorrect: false, type: "Psychological State" },
+                    { text: "Illness denial, a refusal to accept the reality of the illness. (Rejecting Truth)", isCorrect: false, type: "Defense Mechanism" },
+                    { text: "Regression, reverting to childlike behaviors. (Immature Response)", isCorrect: false, type: "Defense Mechanism" },
+                    { text: "Frustration-aggression hypothesis, where frustration leads to aggressive behavior. (Emotional Reaction)", isCorrect: true, type: "Psychological Phenomenon" }
+                ]
+            },
+            {
+                level: 10,
+                scenario: "You are in Ward 10. Many patients from lower socioeconomic backgrounds present with vague, culturally bound syndromes (e.g., 'jinn ka asar' - influence of spirits, 'nazar' - evil eye) that don't fit Western diagnostic criteria, yet often respond positively to culturally sensitive reassurance and traditional remedies alongside modern medicine.",
+                question: "Understanding and effectively treating patients presenting with such conditions requires knowledge of which crucial concept in medical psychology and anthropology, allowing your final escape?",
+                options: [
+                    { text: "Psychosomatic illness, where mental factors cause physical symptoms. (Mind-Body Illness)", isCorrect: false, type: "Medical Term" },
+                    { text: "Culture-bound syndromes, patterns of abnormal behavior unique to specific cultures. (Cultural Context)", isCorrect: true, type: "Medical Anthropology Term" },
+                    { text: "Conversion disorder, physical symptoms without a neurological explanation. (Physical Mimicry)", isCorrect: false, type: "Disorder" },
+                    { text: "Delusional disorder, characterized by one or more non-bizarre delusions. (False Beliefs)", isCorrect: false, type: "Disorder" }
+                ]
             }
         ];
 
-        // Initialize game on window load
-        window.onload = initGame;
+        let currentLevel = 0;
+        let score = 0;
+        let timer;
+        let timeLeft = 39;
+        const maxTime = 39;
+        let highScores = JSON.parse(localStorage.getItem('mindpulseHighScores')) || [];
 
-        /**
-         * Initializes the game by setting initial state and displaying the welcome screen.
-         */
-        function initGame() {
-            currentScenarioIndex = 0;
-            score = 0;
-            isAnswered = false;
-            playerName = ''; // Clear player name on new game
-            playerNameInput.value = ''; // Clear input field
-            nameError.classList.add('hidden'); // Hide error message
-            scoreDisplay.textContent = `Score: ${score}`;
-            updateProgressBar();
+        // IMPORTANT: Replace these with the actual values you found in Step 2 of the guide
+        // You MUST get these by inspecting your live Google Form.
+        const GOOGLE_FORM_ACTION_URL = 'YOUR_GOOGLE_FORM_ACTION_URL_HERE'; // Example: 'https://docs.google.com/forms/d/e/1FAIpQLSc.../formResponse'
+        const GOOGLE_FORM_PLAYER_NAME_FIELD = 'YOUR_PLAYER_NAME_ENTRY_FIELD_HERE'; // Example: 'entry.1234567890'
+        const GOOGLE_FORM_SCORE_FIELD = 'YOUR_SCORE_ENTRY_FIELD_HERE';       // Example: 'entry.0987654321'
 
-            // Hide all screens and show welcome screen
-            welcomeScreen.classList.add('active');
-            gameScreen.classList.remove('active');
-            resultsScreen.classList.remove('active');
+        // DOM Elements
+        const startScreen = document.getElementById('startScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const endScreen = document.getElementById('endScreen');
+        const scoreboardScreen = document.getElementById('scoreboardScreen');
 
-            // Hide feedback and next button initially
-            feedbackContainer.classList.add('hidden');
-            nextScenarioBtn.classList.add('hidden');
-            optionsContainer.classList.remove('answered'); // Reset options container state
+        const startButton = document.getElementById('startButton');
+        const showScoreboardButton = document.getElementById('showScoreboardButton');
+        const hideScoreboardButton = document.getElementById('hideScoreboardButton');
+        const restartButton = document.getElementById('restartButton');
+        const backToMenuButton = document.getElementById('backToMenuButton');
 
-            // Clear scoreboard display
-            scoreboardList.innerHTML = '';
-        }
+        const levelDisplay = document.getElementById('levelDisplay');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const scenarioText = document.getElementById('scenarioText');
+        const questionText = document.getElementById('questionText');
+        const optionsContainer = document.getElementById('optionsContainer');
+        const dropZone = document.getElementById('dropZone');
+        const dropZonePlaceholder = document.querySelector('.drop-zone-placeholder');
+        const finalScoreDisplay = document.getElementById('finalScoreDisplay');
+        const scoreboardList = document.getElementById('scoreboardList');
+        const doorIcon = document.getElementById('doorIcon');
 
-        /**
-         * Starts the game, transitioning from the welcome screen to the first scenario.
-         */
-        function startGame() {
-            // Get player name and validate
-            const name = playerNameInput.value.trim();
-            if (name === '') {
-                nameError.classList.remove('hidden');
-                return;
-            }
-            playerName = name;
-            nameError.classList.add('hidden'); // Hide error if name is entered
-
-            welcomeScreen.classList.remove('active');
-            gameScreen.classList.add('active');
-            loadScenario();
-        }
-
-        /**
-         * Loads and displays the current scenario's information.
-         */
-        function loadScenario() {
-            // Reset state for new scenario
-            isAnswered = false;
-            feedbackContainer.classList.add('hidden');
-            nextScenarioBtn.classList.add('hidden');
-            optionsContainer.classList.remove('answered');
-
-            const scenario = scenarios[currentScenarioIndex];
-
-            // Update scenario text and image
-            scenarioText.textContent = scenario.scenarioText;
-            scenarioImage.src = scenario.imagePlaceholder;
-            scenarioImage.alt = `Icon for ${scenario.reaction}`; // Update alt text
-
-            // Update progress indicator
-            scenarioProgress.textContent = `Scenario ${currentScenarioIndex + 1} of ${scenarios.length}`;
-            updateProgressBar();
-
-            // Clear previous options
-            optionsContainer.innerHTML = '';
-
-            // Dynamically create option buttons
-            scenario.options.forEach((option, index) => {
-                const button = document.createElement('button');
-                button.textContent = option;
-                button.classList.add('option-button', 'block', 'w-full', 'hover:shadow-md');
-                button.dataset.index = index; // Store index for checking answer
-                button.addEventListener('click', () => checkAnswer(index));
-                optionsContainer.appendChild(button);
-            });
-        }
-
-        /**
-         * Checks the player's selected answer, provides feedback, and updates score.
-         * @param {number} selectedIndex The index of the chosen option.
-         */
-        function checkAnswer(selectedIndex) {
-            if (isAnswered) return; // Prevent multiple answers for the same scenario
-            isAnswered = true;
-
-            const scenario = scenarios[currentScenarioIndex];
-            const correctIndex = scenario.correctOptionIndex;
-            const chosenButton = optionsContainer.children[selectedIndex];
-
-            // Add 'selected' class to prevent hover effects and indicate chosen option
-            chosenButton.classList.add('selected');
-
-            // Apply styling based on correctness
-            if (selectedIndex === correctIndex) {
-                chosenButton.classList.add('correct');
-                score += 10;
-                feedbackHeading.textContent = scenario.feedback.correct.heading;
-                feedbackText.textContent = scenario.feedback.correct.text;
-            } else if (scenario.feedback.partiallyCorrect && selectedIndex === scenario.feedback.partiallyCorrectIndex) {
-                 // If there's a specific 'partially correct' option defined in the scenario.
-                chosenButton.classList.add('partially-correct');
-                score += 5;
-                feedbackHeading.textContent = scenario.feedback.partiallyCorrect.heading;
-                feedbackText.textContent = scenario.feedback.partiallyCorrect.text;
-            }
-            else {
-                chosenButton.classList.add('incorrect');
-                score += 0; // No points for incorrect answers
-                feedbackHeading.textContent = scenario.feedback.incorrect.heading;
-                feedbackText.textContent = scenario.feedback.incorrect.text;
-
-                // Highlight the correct answer if an incorrect one was chosen
-                const correctButton = optionsContainer.children[correctIndex];
-                if (correctButton) { // Ensure correctButton exists
-                    correctButton.classList.add('correct');
-                    correctButton.classList.remove('opacity-60', 'pointer-events-none'); // Make correct visible
-                }
-            }
-
-            scoreDisplay.textContent = `Score: ${score}`;
-            feedbackContainer.classList.remove('hidden');
-            nextScenarioBtn.classList.remove('hidden');
-            optionsContainer.classList.add('answered'); // Disable further clicks on options
-        }
-
-        /**
-         * Advances to the next scenario or ends the game if all scenarios are completed.
-         */
-        function nextScenario() {
-            currentScenarioIndex++;
-            if (currentScenarioIndex < scenarios.length) {
-                loadScenario();
-            } else {
-                endGame();
-            }
-        }
-
-        /**
-         * Ends the game and displays the results screen.
-         */
-        function endGame() {
-            gameScreen.classList.remove('active');
-            resultsScreen.classList.add('active');
-            finalScoreDisplay.textContent = score;
-
-            // Add current player's score to the scoreboard
-            scoreboard.push({ name: playerName, score: score });
-            // Sort scoreboard by score in descending order
-            scoreboard.sort((a, b) => b.score - a.score);
-
-            // Display scoreboard
-            displayScoreboard();
-
-            // Determine performance summary based on score
-            let summary = "";
-            const maxScore = scenarios.length * 10;
-            const percentage = (score / maxScore) * 100;
-
-            if (percentage >= 90) {
-                summary = "Excellent Job, Healthcare Hero! You demonstrated exceptional empathy and understanding of psychological reactions.";
-            } else if (percentage >= 70) {
-                summary = "Great Work! You have a solid grasp of patient emotions. Keep practicing to master all reactions.";
-            } else if (percentage >= 50) {
-                summary = "Good Effort! You're on your way to becoming an empathetic healthcare professional. Review the feedback to improve.";
-            } else {
-                summary = "Keep Practicing! Understanding patient emotions is a key skill. Review the scenarios and try again.";
-            }
-            performanceSummary.textContent = summary;
-        }
-
-        /**
-         * Updates the progress bar based on the current scenario.
-         */
-        function updateProgressBar() {
-            const progressPercentage = ((currentScenarioIndex + 1) / scenarios.length) * 100;
-            progressBarFill.style.width = `${progressPercentage}%`;
-        }
-
-        /**
-         * Displays the current scoreboard on the results screen.
-         */
-        function displayScoreboard() {
-            scoreboardList.innerHTML = ''; // Clear previous scoreboard
-            // Display top 5 scores, or all if less than 5
-            const scoresToDisplay = scoreboard.slice(0, 5);
-
-            if (scoresToDisplay.length === 0) {
-                const noScoresMsg = document.createElement('p');
-                noScoresMsg.textContent = "No scores yet. Be the first!";
-                noScoresMsg.classList.add('text-gray-500', 'py-4');
-                scoreboardList.appendChild(noScoresMsg);
-                return;
-            }
-
-            scoresToDisplay.forEach((entry, index) => {
-                const scoreItem = document.createElement('div');
-                scoreItem.classList.add('scoreboard-item');
-                scoreItem.innerHTML = `
-                    <span class="name">${index + 1}. ${entry.name}</span>
-                    <span class="score">${entry.score} points</span>
-                `;
-                scoreboardList.appendChild(scoreItem);
-            });
-        }
-
+        // Name Input Modal Elements
+        const nameInputModal = document.getElementById('nameInputModal');
+        const playerNameInput = document.getElementById('playerNameInput');
+        const saveNameButton = document.getElementById('saveNameButton');
 
         // Event Listeners
-        startGameBtn.addEventListener('click', startGame);
-        nextScenarioBtn.addEventListener('click', nextScenario);
-        playAgainBtn.addEventListener('click', initGame); // initGame will reset and show welcome
+        startButton.addEventListener('click', startGame);
+        showScoreboardButton.addEventListener('click', showScoreboard);
+        hideScoreboardButton.addEventListener('click', showStartScreen);
+        restartButton.addEventListener('click', startGame);
+        backToMenuButton.addEventListener('click', showStartScreen);
+        saveNameButton.addEventListener('click', handleSaveName);
 
+        // Drag & Drop Event Listeners
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
+
+        // Utility function to shuffle an array
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+            }
+        }
+
+        function startGame() {
+            currentLevel = 0;
+            score = 0;
+            updateScoreDisplay();
+            startScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            scoreboardScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            doorIcon.classList.remove('unlocked'); // Reset door icon
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            clearInterval(timer); // Clear any existing timer
+            if (currentLevel >= questions.length) {
+                endGame();
+                return;
+            }
+
+            const q = questions[currentLevel];
+            levelDisplay.textContent = q.level;
+            scenarioText.textContent = q.scenario;
+            questionText.textContent = q.question;
+            optionsContainer.innerHTML = ''; // Clear previous options
+            dropZone.innerHTML = ''; // Clear any dropped item
+            dropZone.appendChild(dropZonePlaceholder); // Re-add the placeholder
+            dropZone.classList.remove('has-item'); // Remove has-item class
+
+            // Reset door icon to locked state
+            doorIcon.classList.remove('unlocked');
+            doorIcon.textContent = '🔒'; // Locked emoji
+
+            // Shuffle options for each question
+            const shuffledOptions = [...q.options];
+            shuffleArray(shuffledOptions);
+
+            shuffledOptions.forEach((option, index) => {
+                const button = document.createElement('div'); // Changed to div for draggable
+                button.classList.add('option-draggable', 'rounded-xl', 'p-4', 'text-left', 'transition', 'duration-200', 'ease-in-out', 'hover:bg-opacity-25', 'hover:scale-102');
+                button.innerHTML = `<span class="font-bold">${String.fromCharCode(65 + index)}.</span> ${option.text}`; // A, B, C, D
+                button.dataset.isCorrect = option.isCorrect;
+                button.setAttribute('draggable', 'true'); // Make it draggable
+                button.id = `option-${currentLevel}-${index}`; // Unique ID for drag data
+                button.addEventListener('dragstart', handleDragStart);
+                button.addEventListener('dragend', handleDragEnd);
+                optionsContainer.appendChild(button);
+            });
+
+            timeLeft = maxTime;
+            timerDisplay.textContent = timeLeft;
+            timerDisplay.classList.remove('timer-blinking'); // Reset blinking
+            startTimer();
+        }
+
+        function startTimer() {
+            timer = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+
+                if (timeLeft <= 3) { // Start blinking when 3 seconds or less remain
+                    timerDisplay.classList.add('timer-blinking');
+                } else {
+                    timerDisplay.classList.remove('timer-blinking');
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    customAlert("Time's Up!", "The door remains locked! Moving to the next ward.");
+                    score -= 5; // Penalty for running out of time
+                    updateScoreDisplay();
+                    setTimeout(() => {
+                        currentLevel++;
+                        loadQuestion();
+                    }, 1500); // Wait a bit before loading next question
+                }
+            }, 1000);
+        }
+
+        function handleDragStart(event) {
+            event.target.classList.add('dragging');
+            // Store the ID and correctness of the dragged element
+            event.dataTransfer.setData('text/plain', event.target.id);
+            event.dataTransfer.setData('isCorrect', event.target.dataset.isCorrect);
+        }
+
+        function handleDragEnd(event) {
+            event.target.classList.remove('dragging');
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault(); // Allow drop
+            dropZone.classList.add('drag-over');
+        }
+
+        function handleDragLeave(event) {
+            dropZone.classList.remove('drag-over');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            dropZone.classList.remove('drag-over');
+
+            // Prevent multiple drops or dropping if an answer is already selected
+            if (dropZone.querySelector('.option-draggable')) { // Check if a draggable item is already in dropZone
+                customAlert("Already Answered!", "You've already placed an answer. Please wait for the next question.");
+                return;
+            }
+
+            const draggedElementId = event.dataTransfer.getData('text/plain');
+            const isCorrect = event.dataTransfer.getData('isCorrect') === 'true';
+            const draggedElement = document.getElementById(draggedElementId);
+
+            if (draggedElement) {
+                clearInterval(timer); // Stop the timer immediately
+
+                // Remove placeholder and append the dragged element to the drop zone
+                dropZonePlaceholder.remove();
+                dropZone.appendChild(draggedElement);
+                dropZone.classList.add('has-item'); // Add has-item class to drop zone
+
+                // Disable all options and remove draggable attribute
+                Array.from(optionsContainer.children).forEach(option => {
+                    option.setAttribute('draggable', 'false');
+                    option.style.cursor = 'default';
+                });
+                draggedElement.setAttribute('draggable', 'false');
+                draggedElement.style.cursor = 'default';
+
+                if (isCorrect) {
+                    draggedElement.classList.add('correct');
+                    score += 10; // Reward for correct answer
+                    doorIcon.textContent = '🔓'; // Unlocked emoji
+                    doorIcon.classList.add('unlocked'); // Animate unlock
+                    customAlert("Door Unlocked!", "You've solved the puzzle and unlocked the door to the next ward!");
+                } else {
+                    draggedElement.classList.add('incorrect');
+                    score -= 5; // Penalty for incorrect answer
+                    customAlert("Door Remains Locked!", "That wasn't the right key. The door remains shut.");
+
+                    // Highlight the correct answer among the original options
+                    Array.from(optionsContainer.children).forEach(option => {
+                        if (option.dataset.isCorrect === 'true') {
+                            option.classList.add('correct');
+                        }
+                    });
+                }
+
+                updateScoreDisplay();
+
+                // Move to the next question after a short delay
+                setTimeout(() => {
+                    currentLevel++;
+                    loadQuestion();
+                }, 2000); // 2 seconds delay to see feedback
+            }
+        }
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = score;
+        }
+
+        function endGame() {
+            clearInterval(timer);
+            gameScreen.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+            finalScoreDisplay.textContent = score;
+            showNameInputModal(); // Show name input modal instead of direct save
+        }
+
+        function showNameInputModal() {
+            nameInputModal.classList.remove('hidden');
+            playerNameInput.value = ''; // Clear previous input
+            playerNameInput.focus(); // Focus on the input field
+        }
+
+        function handleSaveName() {
+            let playerName = playerNameInput.value.trim();
+            if (playerName === "") {
+                playerName = "Anonymous";
+            }
+            
+            // Temporarily hide the modal
+            nameInputModal.classList.add('hidden'); 
+
+            // Prepare form data for Google Form submission
+            const formData = new FormData();
+            // IMPORTANT: Replace these placeholder values with the actual 'name' attributes
+            // you found by inspecting your live Google Form (e.g., 'entry.1234567890')
+            formData.append(GOOGLE_FORM_PLAYER_NAME_FIELD, playerName);
+            formData.append(GOOGLE_FORM_SCORE_FIELD, score); 
+
+            // Send score to Google Form
+            fetch(GOOGLE_FORM_ACTION_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Important for cross-origin form submission
+                body: formData,
+            })
+            .then(() => {
+                console.log('Score submitted to Google Form successfully!');
+                // Now save to local storage and show scoreboard
+                saveScoreToLocalStorage(score, playerName);
+                showScoreboard();
+            })
+            .catch((error) => {
+                console.error('Error submitting score to Google Form:', error);
+                customAlert("Error", "Could not save score to online scoreboard. Score saved locally.");
+                // Still save to local storage even if online save fails
+                saveScoreToLocalStorage(score, playerName);
+                showScoreboard();
+            });
+        }
+
+        // Renamed original saveScore to avoid conflict and clarify its purpose
+        function saveScoreToLocalStorage(newScore, playerName) {
+            highScores.push({ name: playerName, score: newScore });
+            highScores.sort((a, b) => b.score - a.score); // Sort descending
+            highScores = highScores.slice(0, 10); // Keep top 10
+            localStorage.setItem('mindpulseHighScores', JSON.stringify(highScores));
+        }
+
+        function showScoreboard() {
+            startScreen.classList.add('hidden');
+            gameScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            scoreboardScreen.classList.remove('hidden');
+
+            scoreboardList.innerHTML = `
+                <div class="scoreboard-item font-bold text-lg mb-2">
+                    <span>Player</span>
+                    <span>Score</span>
+                </div>
+            `;
+            if (highScores.length === 0) {
+                scoreboardList.innerHTML += `<p class="text-center text-gray-300 mt-4">No scores yet. Play to set one!</p>`;
+            } else {
+                highScores.forEach((entry, index) => {
+                    scoreboardList.innerHTML += `
+                        <div class="scoreboard-item text-gray-200">
+                            <span>${index + 1}. ${entry.name}</span>
+                            <span>${entry.score}</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function showStartScreen() {
+            gameScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            scoreboardScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        }
+
+        // Initialize high scores on page load
+        showStartScreen(); // Ensure start screen is visible initially
     </script>
 </body>
 </html>
