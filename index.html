@@ -448,11 +448,10 @@
         const maxTime = 39;
         let highScores = JSON.parse(localStorage.getItem('mindpulseHighScores')) || [];
 
-        // IMPORTANT: Replace these with the actual values you found in Step 2 of the guide
-        // You MUST get these by inspecting your live Google Form.
-        const GOOGLE_FORM_ACTION_URL = 'YOUR_GOOGLE_FORM_ACTION_URL_HERE'; // Example: 'https://docs.google.com/forms/d/e/1FAIpQLSc.../formResponse'
-        const GOOGLE_FORM_PLAYER_NAME_FIELD = 'YOUR_PLAYER_NAME_ENTRY_FIELD_HERE'; // Example: 'entry.1234567890'
-        const GOOGLE_FORM_SCORE_FIELD = 'YOUR_SCORE_ENTRY_FIELD_HERE';       // Example: 'entry.0987654321'
+        // IMPORTANT: These values have been updated based on your provided Google Form details.
+        const GOOGLE_FORM_ACTION_URL = 'https://docs.google.com/forms/u/0/d/e/1FAIpQLSdCMUNt9M5VY2dUQURkpUAqCjP5Mcl0wVlLcVYDUb_Xvie18Q/formResponse';
+        const GOOGLE_FORM_PLAYER_NAME_FIELD = 'entry.328988562';
+        const GOOGLE_FORM_SCORE_FIELD = 'entry.1676217584';
 
         // DOM Elements
         const startScreen = document.getElementById('startScreen');
@@ -690,8 +689,6 @@
 
             // Prepare form data for Google Form submission
             const formData = new FormData();
-            // IMPORTANT: Replace these placeholder values with the actual 'name' attributes
-            // you found by inspecting your live Google Form (e.g., 'entry.1234567890')
             formData.append(GOOGLE_FORM_PLAYER_NAME_FIELD, playerName);
             formData.append(GOOGLE_FORM_SCORE_FIELD, score); 
 
